@@ -1,0 +1,234 @@
+// Configuración
+const API_URL = 'http://localhost:5000/api';
+
+// Elementos del DOM
+const lenguajeSelect = document.getElementById('lenguaje');
+const nivelCards = document.querySelectorAll('.nivel-card');
+const buscarBtn = document.getElementById('buscarBtn');
+const loadingDiv = document.getElementById('loading');
+const resultadosDiv = document.getElementById('resultados');
+const videosContainer = document.getElementById('videos-container');
+const canalesContainer = document.getElementById('canales-container');
+const resultadosTitulo = document.getElementById('resultados-titulo');
+const resultadosMensaje = document.getElementById('resultados-mensaje');
+const canalesSection = document.getElementById('canales-recomendados');
+const statsContainer = document.getElementById('stats-container');
+
+// Estado
+let nivelSeleccionado = 'principiante';
+let lenguajeSeleccionado = '';
+
+// Inicialización
+document.addEventListener('DOMContentLoaded', async () => {
+    await cargarLenguajes();
+    await cargarEstadisticas();
+    configurarEventListeners();
+});
+
+// Cargar lenguajes
+async function cargarLenguajes() {
+    try {
+        const response = await fetch(`${API_URL}/lenguajes`);
+        const lenguajes = await response.json();
+        
+        lenguajeSelect.innerHTML = '<option value="">Selecciona un lenguaje...</option>';
+        lenguajes.forEach(lang => {
+            const option = document.createElement('option');
+            option.value = lang.id;
+            option.textContent = `${lang.icono} ${lang.nombre}`;
+            lenguajeSelect.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error cargando lenguajes:', error);
+        mostrarError('No se pudieron cargar los lenguajes');
+    }
+}
+
+// Configurar event listeners
+function configurarEventListeners() {
+    // Selección de nivel
+    nivelCards.forEach(card => {
+        card.addEventListener('click', () => {
+            const radio = card.querySelector('input');
+            radio.checked = true;
+            nivelSeleccionado = radio.value;
+            
+            // Actualizar UI
+            nivelCards.forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+        });
+    });
+
+    // Buscar
+    buscarBtn.addEventListener('click', buscarCursos);
+    
+    // Enter en select
+    lenguajeSelect.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            buscarCursos();
+        }
+    });
+}
+
+// Buscar cursos
+async function buscarCursos() {
+    lenguajeSeleccionado = lenguajeSelect.value;
+    
+    if (!lenguajeSeleccionado) {
+        alert('Por favor selecciona un lenguaje de programación');
+        return;
+    }
+
+    // Mostrar loading
+    loadingDiv.style.display = 'block';
+    resultadosDiv.style.display = 'none';
+    
+    try {
+        const response = await fetch(`${API_URL}/buscar`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                lenguaje: lenguajeSeleccionado,
+                nivel: nivelSeleccionado
+            })
+        });
+
+        const data = await response.json();
+        
+        if (data.exito) {
+            mostrarResultados(data);
+        } else {
+            mostrarError(data.error || 'Error en la búsqueda');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        mostrarError('Error de conexión con el servidor');
+    } finally {
+        loadingDiv.style.display = 'none';
+    }
+}
+
+// Mostrar resultados
+function mostrarResultados(data) {
+    resultadosTitulo.innerHTML = `<i class="fas fa-code"></i> Cursos de ${data.lenguaje} - Nivel ${data.nivel}`;
+    resultadosMensaje.textContent = data.mensaje;
+    
+    // Mostrar videos
+    videosContainer.innerHTML = '';
+    data.videos.forEach(video => {
+        videosContainer.appendChild(crearVideoCard(video));
+    });
+    
+    // Mostrar canales recomendados
+    if (data.canales_recomendados && data.canales_recomendados.length > 0) {
+        canalesSection.style.display = 'block';
+        canalesContainer.innerHTML = '';
+        data.canales_recomendados.forEach(canal => {
+            canalesContainer.appendChild(crearCanalCard(canal));
+        });
+    } else {
+        canalesSection.style.display = 'none';
+    }
+    
+    resultadosDiv.style.display = 'block';
+    
+    // Actualizar estadísticas
+    cargarEstadisticas();
+}
+
+// Crear tarjeta de video
+function crearVideoCard(video) {
+    const card = document.createElement('div');
+    card.className = 'video-card';
+    
+    const nivelClass = `nivel-${video.nivel_detectado}`;
+    const nivelIcon = video.nivel_detectado === 'principiante' ? '🌱' : 
+                     video.nivel_detectado === 'intermedio' ? '📚' : '🚀';
+    
+    card.innerHTML = `
+        <div class="video-thumbnail">
+            <img src="${video.miniatura}" alt="${video.titulo}">
+            <span class="video-duration">${video.duracion}</span>
+        </div>
+        <div class="video-info">
+            <h3 class="video-title">${video.titulo}</h3>
+            <p class="video-channel"><i class="fas fa-user"></i> ${video.canal}</p>
+            <div class="video-meta">
+                <span><i class="fas fa-eye"></i> ${video.vistas}</span>
+                <span><i class="fas fa-thumbs-up"></i> ${video.likes}</span>
+                <span><i class="fas fa-calendar"></i> ${video.fecha}</span>
+            </div>
+            <div>
+                <span class="nivel-badge ${nivelClass}">${nivelIcon} ${video.nivel_detectado}</span>
+                <span class="confianza"><i class="fas fa-microchip"></i> ${video.confianza_nivel}% confianza IA</span>
+            </div>
+            <div class="video-footer">
+                <a href="${video.enlace}" target="_blank" class="btn-ver">
+                    <i class="fas fa-play"></i> Ver en YouTube
+                </a>
+                <span class="relevancia"><i class="fas fa-star"></i> ${video.relevancia}% relevante</span>
+            </div>
+        </div>
+    `;
+    
+    return card;
+}
+
+// Crear tarjeta de canal
+function crearCanalCard(canal) {
+    const card = document.createElement('div');
+    card.className = 'canal-card';
+    
+    card.innerHTML = `
+        <img src="${canal.miniatura}" alt="${canal.nombre}">
+        <div class="canal-info">
+            <h4>${canal.nombre}</h4>
+            <p><i class="fas fa-users"></i> ${canal.suscriptores} suscriptores</p>
+            <p><i class="fas fa-video"></i> ${canal.videos} videos</p>
+        </div>
+    `;
+    
+    return card;
+}
+
+// Cargar estadísticas
+async function cargarEstadisticas() {
+    try {
+        const response = await fetch(`${API_URL}/estadisticas`);
+        const stats = await response.json();
+        
+        if (stats.total_busquedas > 0) {
+            statsContainer.innerHTML = `
+                <div class="stat-card">
+                    <i class="fas fa-search"></i>
+                    <div class="stat-info">
+                        <h4>${stats.total_busquedas}</h4>
+                        <p>Búsquedas realizadas</p>
+                    </div>
+                </div>
+                ${stats.lenguajes_populares.map(l => `
+                    <div class="stat-card">
+                        <i class="fas fa-code"></i>
+                        <div class="stat-info">
+                            <h4>${l.lenguaje}</h4>
+                            <p>${l.busquedas} búsquedas</p>
+                        </div>
+                    </div>
+                `).join('')}
+            `;
+        }
+    } catch (error) {
+        console.error('Error cargando estadísticas:', error);
+    }
+}
+
+// Mostrar error
+function mostrarError(mensaje) {
+    resultadosDiv.style.display = 'block';
+    resultadosTitulo.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error';
+    resultadosMensaje.textContent = mensaje;
+    videosContainer.innerHTML = '<p style="text-align: center; padding: 20px;">No se pudieron cargar los resultados</p>';
+    canalesSection.style.display = 'none';
+}

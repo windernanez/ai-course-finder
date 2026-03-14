@@ -1,0 +1,27 @@
+# Entornos virtuales
+venv/
+env/
+ENV/
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Archivos de modelo
+*.pkl
+*.joblib
+
+# Logs
+*.log

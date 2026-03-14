@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Course Finder - Encuentra los mejores cursos de programación</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="logo">
+                <i class="fas fa-robot"></i>
+                <h1>AI Course Finder</h1>
+            </div>
+            <p class="subtitle">Encuentra los mejores videos para aprender a programar con IA</p>
+        </header>
+
+        <!-- Buscador Principal -->
+        <div class="search-section">
+            <div class="search-card">
+                <h2><i class="fas fa-search"></i> ¿Qué quieres aprender?</h2>
+                
+                <div class="form-group">
+                    <label for="lenguaje"><i class="fas fa-code"></i> Lenguaje de programación</label>
+                    <select id="lenguaje" class="form-control">
+                        <option value="">Selecciona un lenguaje...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-signal"></i> Nivel de dificultad</label>
+                    <div class="nivel-options">
+                        <label class="nivel-card" data-nivel="principiante">
+                            <input type="radio" name="nivel" value="principiante" checked>
+                            <i class="fas fa-seedling"></i>
+                            <span>Principiante</span>
+                            <small>Desde cero, sin experiencia</small>
+                        </label>
+                        <label class="nivel-card" data-nivel="intermedio">
+                            <input type="radio" name="nivel" value="intermedio">
+                            <i class="fas fa-tree"></i>
+                            <span>Intermedio</span>
+                            <small>Conocimientos básicos</small>
+                        </label>
+                        <label class="nivel-card" data-nivel="avanzado">
+                            <input type="radio" name="nivel" value="avanzado">
+                            <i class="fas fa-crown"></i>
+                            <span>Avanzado</span>
+                            <small>Profundizar y optimizar</small>
+                        </label>
+                    </div>
+                </div>
+
+                <button id="buscarBtn" class="btn-buscar">
+                    <i class="fas fa-magic"></i>
+                    Buscar con IA
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>La IA está buscando los mejores videos para ti...</p>
+            <p class="loading-sub">Analizando títulos, descripciones y relevancia</p>
+        </div>
+
+        <!-- Resultados -->
+        <div id="resultados" class="resultados-section" style="display: none;">
+            <div class="resultados-header">
+                <h2><i class="fas fa-video"></i> <span id="resultados-titulo"></span></h2>
+                <p id="resultados-mensaje"></p>
+            </div>
+
+            <!-- Canales Recomendados -->
+            <div id="canales-recomendados" class="canales-section" style="display: none;">
+                <h3><i class="fas fa-star"></i> Canales recomendados</h3>
+                <div class="canales-grid" id="canales-container"></div>
+            </div>
+
+            <!-- Grid de Videos -->
+            <div class="videos-grid" id="videos-container"></div>
+        </div>
+
+        <!-- Stats Section -->
+        <div class="stats-section">
+            <h3><i class="fas fa-chart-bar"></i> Tendencias de aprendizaje</h3>
+            <div id="stats-container" class="stats-container">
+                <p>Cargando estadísticas...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

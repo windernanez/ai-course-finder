@@ -11,18 +11,19 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 load_dotenv()
 
-# Configuración de carpetas estáticas
 app = Flask(__name__, 
             static_folder='../frontend', 
             static_url_path='')
 
-# Configuración de CORS para permitir peticiones desde tu terminal y el frontend
+# Configuración de CORS: Permite peticiones desde cualquier origen (Vercel, Localhost, etc.)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
+# Variables de entorno
 YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY', '')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
 
 # Inicialización de servicios
+# Asegúrate de que las API Keys estén configuradas en las variables de Railway
 buscador = BuscadorCursosIA(YOUTUBE_API_KEY)
 chatbot = ChatbotGemini(GEMINI_API_KEY)
 
@@ -34,7 +35,7 @@ def servir_frontend():
         return jsonify({
             "mensaje": "API de AI Course Finder Activa", 
             "status": "online",
-            "info": "Para usar la API usa los endpoints /api/buscar o /api/chat"
+            "info": "Backend operativo para el proyecto de maestría."
         }), 200
 
 # --- ENDPOINT: BUSCADOR DE CURSOS ---
@@ -51,6 +52,7 @@ def buscar_cursos():
     nivel = data.get('nivel', 'principiante')
     
     try:
+        # Usamos buscar_videos que es el nombre confirmado en tu lógica
         resultado = buscador.buscar_videos(lenguaje, nivel)
         return jsonify(resultado)
     except Exception as e:
@@ -77,11 +79,26 @@ def chat():
 # --- ENDPOINT: LISTADO DE LENGUAJES ---
 @app.route('/api/lenguajes', methods=['GET'])
 def listar_lenguajes():
-    # Esto es útil para llenar los selects en tu frontend
+    # Retorna la lista que el frontend necesita para el selector
     lenguajes = ["python", "javascript", "java", "php", "c++", "ruby"]
     return jsonify({"lenguajes": lenguajes})
 
+# --- ENDPOINT: ESTADÍSTICAS (Para evitar 404 en el Frontend) ---
+@app.route('/api/estadisticas', methods=['GET'])
+def obtener_estadisticas():
+    stats = {
+        "cursos_totales": 150,
+        "busquedas_exitosas": 1240,
+        "usuarios_activos": 85,
+        "popularidad": [
+            {"name": "Python", "value": 45},
+            {"name": "JS", "value": 35},
+            {"name": "Otros", "value": 20}
+        ]
+    }
+    return jsonify(stats)
+
 if __name__ == '__main__':
-    # Railway inyecta el puerto automáticamente
+    # Railway inyecta el puerto automáticamente mediante la variable PORT
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)

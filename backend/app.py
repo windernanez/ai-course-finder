@@ -51,7 +51,7 @@ def buscar_cursos():
     nivel = data.get('nivel', 'principiante')
     
     try:
-        resultado = buscador.buscar_y_recomendar(lenguaje, nivel)
+        resultado = buscador.buscar_videos(lenguaje, nivel)
         return jsonify(resultado)
     except Exception as e:
         return jsonify({"error": str(e)}), 500

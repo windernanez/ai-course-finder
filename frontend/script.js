@@ -1,5 +1,5 @@
 // Configuración
-const API_URL = '/api';
+const API_URL = 'https://ai-course-finder.up.railway.app/api';
 
 // Elementos del DOM
 const lenguajeSelect = document.getElementById('lenguaje');

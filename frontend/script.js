@@ -41,13 +41,12 @@ async function cargarLenguajes() {
         const response = await fetch(`${API_URL}/lenguajes`);
         const data = await response.json();
         
-        // CORRECCIÓN: Accedemos a data.lenguajes porque la API devuelve un objeto
         const listaLenguajes = data.lenguajes || [];
         
         lenguajeSelect.innerHTML = '<option value="">Selecciona un lenguaje...</option>';
         listaLenguajes.forEach(lang => {
             const option = document.createElement('option');
-            option.value = lang; // En tu API actual lang es un string
+            option.value = lang;
             option.textContent = lang.toUpperCase();
             lenguajeSelect.appendChild(option);
         });
@@ -101,13 +100,17 @@ async function buscarCursos() {
         });
 
         const data = await response.json();
+        console.log("📡 Respuesta del servidor:", data);
         
-        // Adaptación a la estructura de respuesta del buscador_ia.py
-        if (data.videos) {
+        // CORRECCIÓN PARA IMAGEN 11: Manejar si la API devuelve un Array directo o un objeto con .videos
+        if (Array.isArray(data) && data.length > 0) {
+            mostrarResultados({ videos: data });
+            agregarMensajeChat(`He encontrado ${data.length} cursos de ${lenguajeSeleccionado.toUpperCase()}.`, 'bot');
+        } else if (data.videos && data.videos.length > 0) {
             mostrarResultados(data);
-            agregarMensajeChat(`He encontrado videos de ${lenguajeSeleccionado}. ¡A estudiar! 🚀`, 'bot');
+            agregarMensajeChat(`He encontrado videos de ${lenguajeSeleccionado.toUpperCase()}. ¡A estudiar! 🚀`, 'bot');
         } else {
-            mostrarError('No se encontraron resultados adecuados.');
+            mostrarError('No se encontraron resultados adecuados. Intenta con otro nivel.');
         }
     } catch (error) {
         console.error('❌ Error:', error);
@@ -155,11 +158,16 @@ function mostrarResultados(data) {
         const card = document.createElement('div');
         card.className = 'video-card';
         card.innerHTML = `
-            <img src="${video.miniatura}" alt="miniatura">
+            <img src="${video.miniatura}" alt="${video.titulo}">
             <div class="video-info">
                 <h4>${video.titulo}</h4>
-                <p>${video.canal}</p>
-                <a href="${video.enlace}" target="_blank" class="btn-ver">Ver Video</a>
+                <p><i class="fas fa-user"></i> ${video.canal}</p>
+                <div class="video-meta">
+                   <span><i class="fas fa-star"></i> Confianza IA: ${video.confianza_nivel}%</span>
+                </div>
+                <a href="${video.enlace}" target="_blank" class="btn-ver">
+                    <i class="fas fa-play"></i> Ver Video
+                </a>
             </div>
         `;
         videosContainer.appendChild(card);
@@ -167,13 +175,12 @@ function mostrarResultados(data) {
     resultadosDiv.style.display = 'block';
 }
 
-// Cargar estadísticas desde el nuevo endpoint
+// Cargar estadísticas
 async function cargarEstadisticas() {
     try {
         const response = await fetch(`${API_URL}/estadisticas`);
         const data = await response.json();
         
-        // CORRECCIÓN: Usamos la estructura que definimos en app.py
         statsContainer.innerHTML = `
             <div class="stat-card">
                 <h4>${data.cursos_totales}</h4>
@@ -192,4 +199,5 @@ async function cargarEstadisticas() {
 function mostrarError(mensaje) {
     resultadosDiv.style.display = 'block';
     resultadosMensaje.textContent = mensaje;
+    videosContainer.innerHTML = '';
 }

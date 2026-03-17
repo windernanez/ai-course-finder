@@ -1,4 +1,4 @@
-// Configuración - Ajustado para la URL de tu backend en Railway
+// Configuración - URL de tu backend en Railway
 const API_URL = 'https://ai-course-finder.up.railway.app/api';
 
 // Elementos del DOM
@@ -34,15 +34,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     configurarEventListeners();
 });
 
-// Cargar lenguajes - CORREGIDO para manejar objetos con iconos
+// 1. Cargar lenguajes - CORREGIDO: Ahora recibe el array directo []
 async function cargarLenguajes() {
     try {
         console.log('📡 Cargando lenguajes...');
         const response = await fetch(`${API_URL}/lenguajes`);
         const data = await response.json();
         
-        // Usamos 'detalles' que es el array de objetos {id, nombre, icono} del app.py
-        const listaFull = data.detalles || [];
+        // El app.py corregido envía el array directo, no dentro de 'detalles'
+        const listaFull = Array.isArray(data) ? data : (data.detalles || []);
         
         lenguajeSelect.innerHTML = '<option value="">Selecciona un lenguaje...</option>';
         listaFull.forEach(lang => {
@@ -51,41 +51,14 @@ async function cargarLenguajes() {
             option.textContent = `${lang.icono} ${lang.nombre}`;
             lenguajeSelect.appendChild(option);
         });
-        console.log('✅ Lenguajes cargados correctamente');
+        console.log('✅ Lenguajes cargados:', listaFull.length);
     } catch (error) {
         console.error('❌ Error cargando lenguajes:', error);
-        lenguajeSelect.innerHTML = '<option value="">Error cargando lenguajes</option>';
+        lenguajeSelect.innerHTML = '<option value="">Error al cargar</option>';
     }
 }
 
-// Configurar event listeners
-function configurarEventListeners() {
-    nivelCards.forEach(card => {
-        card.addEventListener('click', () => {
-            const radio = card.querySelector('input');
-            radio.checked = true;
-            nivelSeleccionado = radio.value;
-            nivelCards.forEach(c => c.classList.remove('selected'));
-            card.classList.add('selected');
-        });
-    });
-
-    buscarBtn.addEventListener('click', buscarCursos);
-    chatSend.addEventListener('click', enviarMensajeChat);
-    chatInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') enviarMensajeChat();
-    });
-
-    sugerenciaBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const mensaje = btn.getAttribute('data-msg');
-            chatInput.value = mensaje;
-            enviarMensajeChat();
-        });
-    });
-}
-
-// Buscar cursos - CORREGIDO: Resiliencia ante diferentes formatos de respuesta
+// 2. Buscar cursos - CORREGIDO: Sincronizado con el objeto de respuesta del backend
 async function buscarCursos() {
     lenguajeSeleccionado = lenguajeSelect.value;
     if (!lenguajeSeleccionado) {
@@ -106,27 +79,109 @@ async function buscarCursos() {
 
         const data = await response.json();
         
-        // Mantenemos tu lógica de 'exito' pero con fallback por si llega un array directo
-        if (data.exito || Array.isArray(data)) {
-            const datosFinales = Array.isArray(data) ? { videos: data, exito: true, nivel: nivelSeleccionado, lenguaje: lenguajeSeleccionado } : data;
-            mostrarResultados(datosFinales);
+        if (data.exito) {
+            mostrarResultados(data); // Pasamos todo el objeto data
             
-            if (datosFinales.recomendacion_chat) {
-                recomendacionTexto.textContent = datosFinales.recomendacion_chat;
+            if (data.recomendacion_chat) {
+                recomendacionTexto.textContent = data.recomendacion_chat;
                 recomendacionChat.style.display = 'flex';
             }
-            agregarMensajeChat(`He encontrado cursos de ${lenguajeSeleccionado.toUpperCase()}. ¡A estudiar! 🚀`, 'bot');
+            agregarMensajeChat(`¡Listo! Encontré contenido de ${lenguajeSeleccionado.toUpperCase()} para ti. 🚀`, 'bot');
         } else {
-            mostrarError(data.error || 'No se encontraron resultados adecuados.');
+            mostrarError(data.error || 'No se encontraron resultados.');
         }
     } catch (error) {
-        mostrarError('Error de conexión con Railway');
+        mostrarError('Error de conexión. Verifica que el servidor esté activo.');
     } finally {
         loadingDiv.style.display = 'none';
     }
 }
 
-// Funciones del Chat
+// 3. Cargar Estadísticas - CORREGIDO: Muestra ambos valores del app.py
+async function cargarEstadisticas() {
+    try {
+        const response = await fetch(`${API_URL}/estadisticas`);
+        const stats = await response.json();
+        
+        // Usamos las llaves exactas que definimos en app.py
+        const cursos = stats.cursos_totales || 0;
+        const busquedas = stats.busquedas_exitosas || 0;
+        
+        statsContainer.innerHTML = `
+            <div class="stat-card">
+                <i class="fas fa-graduation-cap"></i>
+                <div class="stat-info">
+                    <h4>${cursos}</h4>
+                    <p>Cursos Disponibles</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-search"></i>
+                <div class="stat-info">
+                    <h4>${busquedas}</h4>
+                    <p>Búsquedas</p>
+                </div>
+            </div>
+        `;
+    } catch (error) {
+        console.warn('No se pudieron cargar las estadísticas');
+    }
+}
+
+// 4. Mostrar Resultados - CORREGIDO: Usa los nombres del backend corregido
+function mostrarResultados(data) {
+    const nombreLenguaje = lenguajeSelect.options[lenguajeSelect.selectedIndex].text;
+    resultadosTitulo.innerHTML = `<i class="fas fa-code"></i> Cursos de ${nombreLenguaje}`;
+    
+    videosContainer.innerHTML = '';
+    if (!data.videos || data.videos.length === 0) {
+        videosContainer.innerHTML = '<p class="no-results">No se encontraron videos adecuados.</p>';
+    } else {
+        data.videos.forEach(video => {
+            videosContainer.appendChild(crearVideoCard(video));
+        });
+    }
+    
+    // Sincronizado con 'canales_recomendados' del app.py
+    if (data.canales_recomendados && data.canales_recomendados.length > 0) {
+        canalesSection.style.display = 'block';
+        canalesContainer.innerHTML = '';
+        data.canales_recomendados.forEach(canal => {
+            canalesContainer.appendChild(crearCanalCard(canal));
+        });
+    } else {
+        canalesSection.style.display = 'none';
+    }
+    
+    resultadosDiv.style.display = 'block';
+    cargarEstadisticas(); // Actualizar tras buscar
+}
+
+// --- FUNCIONES AUXILIARES (Eventos, Cards, Chat) ---
+
+function configurarEventListeners() {
+    nivelCards.forEach(card => {
+        card.addEventListener('click', () => {
+            const radio = card.querySelector('input');
+            radio.checked = true;
+            nivelSeleccionado = radio.value;
+            nivelCards.forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+        });
+    });
+
+    buscarBtn.addEventListener('click', buscarCursos);
+    chatSend.addEventListener('click', enviarMensajeChat);
+    chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') enviarMensajeChat(); });
+
+    sugerenciaBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            chatInput.value = btn.getAttribute('data-msg');
+            enviarMensajeChat();
+        });
+    });
+}
+
 async function enviarMensajeChat() {
     const mensaje = chatInput.value.trim();
     if (!mensaje) return;
@@ -139,25 +194,62 @@ async function enviarMensajeChat() {
         const response = await fetch(`${API_URL}/chat`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ mensaje: mensaje, lenguaje: lenguajeSeleccionado || null })
+            body: JSON.stringify({ mensaje: mensaje })
         });
         const data = await response.json();
         quitarIndicadorEscritura();
-        
-        // Manejo de respuesta simple o estructurada
-        const respuesta = data.respuesta || (data.exito ? data.respuesta : 'Lo siento, hubo un error.');
-        agregarMensajeChat(respuesta, 'bot');
+        agregarMensajeChat(data.respuesta || 'Lo siento, tuve un problema al procesar eso.', 'bot');
     } catch (error) {
         quitarIndicadorEscritura();
-        agregarMensajeChat('Error de conexión con el servidor', 'bot');
+        agregarMensajeChat('Error de conexión con la IA.', 'bot');
     }
+}
+
+function crearVideoCard(video) {
+    const card = document.createElement('div');
+    card.className = 'video-card';
+    const nivel = video.nivel_detectado || 'principiante';
+    const nivelIcon = nivel === 'avanzado' ? '🚀' : (nivel === 'intermedio' ? '📚' : '🌱');
+    
+    card.innerHTML = `
+        <div class="video-thumbnail">
+            <img src="${video.miniatura}" alt="Miniatura">
+            <span class="video-duration">${video.duracion || 'N/A'}</span>
+        </div>
+        <div class="video-info">
+            <h3 class="video-title">${video.titulo}</h3>
+            <p class="video-channel"><i class="fas fa-user"></i> ${video.canal}</p>
+            <div class="video-meta">
+                <span><i class="fas fa-star"></i> IA: ${video.confianza_nivel}%</span>
+            </div>
+            <div style="margin: 10px 0;">
+                <span class="nivel-badge nivel-${nivel}">${nivelIcon} ${nivel}</span>
+            </div>
+            <div class="video-footer">
+                <a href="${video.enlace}" target="_blank" class="btn-ver">Ver en YouTube</a>
+            </div>
+        </div>
+    `;
+    return card;
+}
+
+function crearCanalCard(canal) {
+    const card = document.createElement('div');
+    card.className = 'canal-card';
+    card.innerHTML = `
+        <img src="${canal.miniatura}" alt="${canal.nombre}" onerror="this.src='https://via.placeholder.com/50'">
+        <div class="canal-info">
+            <h4>${canal.nombre}</h4>
+            <p><i class="fas fa-users"></i> Recomendado</p>
+        </div>
+    `;
+    return card;
 }
 
 function agregarMensajeChat(texto, tipo) {
     const div = document.createElement('div');
     div.className = `message ${tipo}`;
     const tiempo = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    
     div.innerHTML = `
         <div class="message-content">
             <i class="fas ${tipo === 'bot' ? 'fa-robot' : 'fa-user'} avatar"></i>
@@ -173,12 +265,7 @@ function mostrarIndicadorEscritura() {
     const div = document.createElement('div');
     div.className = 'message bot typing-indicator';
     div.id = 'typing-indicator';
-    div.innerHTML = `
-        <div class="message-content">
-            <i class="fas fa-robot avatar"></i>
-            <div class="message-text">Escribiendo<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></div>
-        </div>
-    `;
+    div.innerHTML = `<div class="message-content"><i class="fas fa-robot avatar"></i><div class="message-text">Escribiendo...</div></div>`;
     chatMessages.appendChild(div);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
@@ -188,103 +275,7 @@ function quitarIndicadorEscritura() {
     if (indicator) indicator.remove();
 }
 
-function mostrarResultados(data) {
-    const nombreLenguaje = lenguajeSelect.options[lenguajeSelect.selectedIndex].text;
-    resultadosTitulo.innerHTML = `<i class="fas fa-code"></i> Cursos de ${nombreLenguaje} - Nivel ${data.nivel || nivelSeleccionado}`;
-    
-    videosContainer.innerHTML = '';
-    if (!data.videos || data.videos.length === 0) {
-        videosContainer.innerHTML = '<p style="text-align: center; padding: 20px;">No se encontraron videos.</p>';
-    } else {
-        data.videos.forEach(video => {
-            videosContainer.appendChild(crearVideoCard(video));
-        });
-    }
-    
-    if (data.canales_recomendados && data.canales_recomendados.length > 0) {
-        canalesSection.style.display = 'block';
-        canalesContainer.innerHTML = '';
-        data.canales_recomendados.forEach(canal => {
-            canalesContainer.appendChild(crearCanalCard(canal));
-        });
-    } else {
-        canalesSection.style.display = 'none';
-    }
-    
-    resultadosDiv.style.display = 'block';
-    cargarEstadisticas();
-}
-
-function crearVideoCard(video) {
-    const card = document.createElement('div');
-    card.className = 'video-card';
-    const nivelClass = `nivel-${video.nivel_detectado || 'principiante'}`;
-    const nivelIcon = video.nivel_detectado === 'avanzado' ? '🚀' : (video.nivel_detectado === 'intermedio' ? '📚' : '🌱');
-    
-    card.innerHTML = `
-        <div class="video-thumbnail">
-            <img src="${video.miniatura}" alt="${video.titulo}">
-            <span class="video-duration">${video.duracion || 'N/A'}</span>
-        </div>
-        <div class="video-info">
-            <h3 class="video-title">${video.titulo}</h3>
-            <p class="video-channel"><i class="fas fa-user"></i> ${video.canal}</p>
-            <div class="video-meta">
-                <span><i class="fas fa-star"></i> IA: ${video.confianza_nivel}%</span>
-                <span><i class="fas fa-calendar"></i> ${video.fecha || ''}</span>
-            </div>
-            <div style="margin-top: 10px;">
-                <span class="nivel-badge ${nivelClass}">${nivelIcon} ${video.nivel_detectado}</span>
-            </div>
-            <div class="video-footer">
-                <a href="${video.enlace}" target="_blank" class="btn-ver">Ver Video</a>
-            </div>
-        </div>
-    `;
-    return card;
-}
-
-function crearCanalCard(canal) {
-    const card = document.createElement('div');
-    card.className = 'canal-card';
-    card.innerHTML = `
-        <img src="${canal.miniatura}" alt="${canal.nombre}">
-        <div class="canal-info">
-            <h4>${canal.nombre}</h4>
-            <p><i class="fas fa-users"></i> ${canal.suscriptores || ''}</p>
-        </div>
-    `;
-    return card;
-}
-
-async function cargarEstadisticas() {
-    try {
-        const response = await fetch(`${API_URL}/estadisticas`);
-        const stats = await response.json();
-        
-        // Mapeo flexible para ambos formatos de respuesta (app.py)
-        const total = stats.total_busquedas || stats.busquedas_exitosas || 0;
-        
-        statsContainer.innerHTML = `
-            <div class="stat-card">
-                <i class="fas fa-search"></i>
-                <div class="stat-info">
-                    <h4>${total}</h4>
-                    <p>Búsquedas realizadas</p>
-                </div>
-            </div>
-        `;
-    } catch (error) {
-        console.error('Error stats');
-    }
-}
-
 function mostrarError(mensaje) {
     resultadosDiv.style.display = 'block';
     resultadosMensaje.textContent = mensaje;
 }
-
-// Estilos del indicador de escritura (mantenidos)
-const style = document.createElement('style');
-style.textContent = `.dot { animation: dotPulse 1.5s infinite; opacity: 0; } .dot:nth-child(1) { animation-delay: 0s; } .dot:nth-child(2) { animation-delay: 0.3s; } .dot:nth-child(3) { animation-delay: 0.6s; } @keyframes dotPulse { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }`;
-document.head.appendChild(style);

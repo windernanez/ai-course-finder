@@ -3,6 +3,8 @@ venv/
 env/
 ENV/
 .env
+**/.env
+.venv/
 
 # Python
 __pycache__/
@@ -12,6 +14,24 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+
+# Node (Frontend)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Bases de datos y archivos dinámicos
+*.db
+*.sqlite3
+instance/
+
+# Backup y temporales
+*backup*
+*.bak
+*~
+*.html[0-9]*
+*.tmp
 
 # IDE
 .vscode/

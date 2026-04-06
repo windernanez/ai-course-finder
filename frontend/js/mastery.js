@@ -1,0 +1,1 @@
+// Archivo vaciado tras reversión.

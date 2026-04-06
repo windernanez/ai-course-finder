@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,13 +9,22 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
+
 <body>
     <div class="container">
         <!-- Header -->
         <header>
-            <div class="logo">
-                <i class="fas fa-robot"></i>
-                <h1>AI Course Finder</h1>
+            <div class="header-top">
+                <div class="logo">
+                    <i class="fas fa-robot"></i>
+                    <h1>AI Course Finder</h1>
+                </div>
+                <!-- Perfil de Usuario / Login -->
+                <div id="user-profile" class="user-profile">
+                    <button id="loginBtn" class="btn-login">
+                        <i class="fab fa-google"></i> Iniciar sesión con Gmail
+                    </button>
+                </div>
             </div>
             <p class="subtitle">Encuentra los mejores videos para aprender a programar con IA</p>
         </header>
@@ -23,7 +33,7 @@
         <div class="search-section">
             <div class="search-card">
                 <h2><i class="fas fa-search"></i> ¿Qué quieres aprender?</h2>
-                
+
                 <div class="form-group">
                     <label for="lenguaje"><i class="fas fa-code"></i> Lenguaje de programación</label>
                     <select id="lenguaje" class="form-control">
@@ -34,7 +44,7 @@
                 <div class="form-group">
                     <label><i class="fas fa-signal"></i> Nivel de dificultad</label>
                     <div class="nivel-options">
-                        <label class="nivel-card" data-nivel="principiante">
+                        <label class="nivel-card selected" data-nivel="principiante">
                             <input type="radio" name="nivel" value="principiante" checked>
                             <i class="fas fa-seedling"></i>
                             <span>Principiante</span>
@@ -62,6 +72,71 @@
             </div>
         </div>
 
+        <!-- Avatar Byte (Botón Flotante) -->
+        <div class="avatar-container" id="chat-avatar-btn">
+            <div class="avatar">
+                <div class="avatar-emoji">🤖</div>
+                <div class="avatar-name">Byte</div>
+            </div>
+        </div>
+
+        <!-- Avatar Ggbyte (Botón Flotante Izquierdo) -->
+        <div class="avatar-container female-avatar" id="gg-avatar-btn">
+            <div class="avatar">
+                <div class="avatar-emoji">👩‍💻</div>
+                <div class="avatar-name">Ggbyte</div>
+            </div>
+            <!-- Burbuja independiente de mensajes motivadores -->
+            <div class="gg-bubble" id="gg-bubble">
+                ¡Aquí estoy para animarte! ✨
+            </div>
+        </div>
+
+        <!-- Burbuja de diálogo (Chatbot Flotante) -->
+        <div class="speech-bubble" id="chat-window">
+            <div class="bubble-header">
+                <div class="bubble-avatar">🤖</div>
+                <div style="flex: 1;">
+                    <div class="bubble-title">Byte</div>
+                    <div class="bubble-subtitle">Asistente IA Gemini <span class="chat-status online">🟢 En línea</span>
+                    </div>
+                </div>
+                <div class="close-bubble" id="close-chat-btn"><i class="fas fa-times"></i></div>
+            </div>
+
+            <div class="chat-messages" id="chat-messages">
+                <div class="message bot">
+                    <div class="message-content">
+                        <div class="bubble-avatar-small">🤖</div>
+                        <div class="message-text">
+                            ¡Hola! Soy Byte, tu asistente virtual 🤖.
+                            ¿En qué lenguaje quieres aprender hoy?
+                            Te ayudaré a elegir el mejor curso según tu nivel.
+                        </div>
+                    </div>
+                    <div class="message-time">Ahora</div>
+                </div>
+            </div>
+
+            <div class="chat-sugerencias" id="chat-sugerencias">
+                <button class="sugerencia-btn" data-msg="Quiero aprender Python">🐍 Python</button>
+                <button class="sugerencia-btn" data-msg="JavaScript para web">📜 JavaScript</button>
+                <button class="sugerencia-btn" data-msg="Qué lenguaje me recomiendas">❓ Recomiéndame</button>
+                <button class="sugerencia-btn" data-msg="Soy principiante">🌱 Principiante</button>
+            </div>
+
+            <div class="chat-input-area">
+                <input type="text" id="chat-input" placeholder="Escribe tu mensaje..." autocomplete="off">
+                <button id="chat-send" class="btn-chat">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+
+            <div class="bubble-footer">
+                <small>Potenciado con Google Gemini AI</small>
+            </div>
+        </div>
+
         <!-- Loading -->
         <div id="loading" class="loading" style="display: none;">
             <div class="spinner"></div>
@@ -71,9 +146,40 @@
 
         <!-- Resultados -->
         <div id="resultados" class="resultados-section" style="display: none;">
+            
+            <!-- Línea de Progreso (Movida ARRIBA) -->
+            <div id="progreso-curso-container" class="progreso-curso-container" style="display: none;">
+                <div class="progreso-label">
+                    <span><i class="fas fa-tasks"></i> Tu progreso en este nivel</span>
+                    <span id="progreso-porcentaje" class="progreso-porcentaje">0%</span>
+                </div>
+                <div class="progreso-bar-bg">
+                    <div id="progreso-bar-fill" class="progreso-bar-fill"></div>
+                </div>
+                
+                <!-- Banners de Estado -->
+                <div id="quiz-ready-banner" class="quiz-ready-banner" style="display: none;">
+                    <p>🎉 ¡Has completado todos los videos! Demuestra lo que aprendiste para obtener tu certificado.</p>
+                    <button id="tomarExamenBtn" class="btn-examen"><i class="fas fa-graduation-cap"></i> Realizar Prueba de Conocimiento</button>
+                </div>
+                <div id="certificado-ready-banner" class="certificado-ready-banner" style="display: none;">
+                    <p>🏆 ¡Felicidades! Aprobaste el examen.</p>
+                    <button id="descargarCertificadoBtn" class="btn-certificado"><i class="fas fa-certificate"></i> Enviar Certificado a Gmail</button>
+                </div>
+            </div>
+
             <div class="resultados-header">
                 <h2><i class="fas fa-video"></i> <span id="resultados-titulo"></span></h2>
                 <p id="resultados-mensaje"></p>
+                <div id="recomendacion-chat" class="recomendacion-chat" style="display: none;">
+                    <i class="fas fa-robot"></i>
+                    <span id="recomendacion-texto"></span>
+                </div>
+            </div>
+
+            <!-- Presentación Dinámica del Lenguaje -->
+            <div id="presentacion-container" class="presentation-section-dynamic" style="display: none;">
+                <!-- Se llenará dinámicamente -->
             </div>
 
             <!-- Canales Recomendados -->
@@ -95,6 +201,64 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <!-- Modal de Quiz -->
+    <div id="quiz-modal" class="modal-overlay">
+        <div class="modal-container quiz-container">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <span class="modal-badge">EXAMEN</span>
+                    <h2 id="quiz-titulo">Prueba de Conocimiento</h2>
+                </div>
+                <button class="modal-close" id="close-quiz-modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="quiz-form">
+                    <div id="quiz-preguntas">
+                        <!-- Preguntas generadas dinámicamente -->
+                    </div>
+                </form>
+                <div id="quiz-resultado" class="quiz-resultado" style="display: none;">
+                    <!-- Resultados del examen -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-modal-secondary" id="cancelarQuizBtn">Más tarde</button>
+                <button type="button" class="btn-modal-primary" id="enviarQuizBtn">Finalizar Examen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Creaciones Destacadas / Logros -->
+    <div id="project-modal" class="modal-overlay">
+        <div class="modal-container">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <span class="modal-badge" id="modal-project-type">CREACIÓN DESTACADA</span>
+                    <h2 id="modal-project-name"></h2>
+                </div>
+                <button class="modal-close" id="close-project-modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-info-row">
+                    <span class="modal-year"><i class="far fa-calendar-alt"></i> <span id="modal-project-year"></span></span>
+                </div>
+                <p id="modal-project-desc" class="modal-short-desc" style="font-weight: 600; color: #ffd966;"></p>
+                <div class="modal-details-box" style="margin-top: 15px;">
+                    <h4>Información Detallada</h4>
+                    <p id="modal-project-details" style="margin-top: 10px;"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-modal-secondary" id="modal-btn-ok">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/app.js"></script>
 </body>
+
 </html>

@@ -14,4 +14,4 @@ services:
         value: 3.11.0
       - key: DEBUG
         value: False
-      - fromGroup: ai-course-config # Grupo de variables que crearemos luego
+     # - fromGroup: ai-course-config # Grupo de variables que crearemos luego

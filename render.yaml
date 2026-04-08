@@ -1,10 +1,17 @@
 services:
+  # Servicio para el Backend y Frontend unificado
   - type: web
     name: ai-course-finder
-    runtime: python
+    env: python
+    region: ohio # O la más cercana a ti
+    plan: free
+    # IMPORTANTE: Aquí le decimos que instale desde la carpeta backend
     buildCommand: pip install -r backend/requirements.txt
-    startCommand: cd backend && gunicorn app:app
+    # Iniciamos desde la carpeta backend y enlazamos el puerto
+    startCommand: cd backend && gunicorn app:app --bind 0.0.0.0:$PORT
     envVars:
-      - key: YOUTUBE_API_KEY
-        sync: false
-        required: truex
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: DEBUG
+        value: False
+      - fromGroup: ai-course-config # Grupo de variables que crearemos luego
